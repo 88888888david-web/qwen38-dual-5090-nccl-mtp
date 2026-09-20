@@ -1,5 +1,7 @@
 # Dual 5090 Running Qwen3.8-27B: Getting NCCL & MTP Right — Decode from 48 to 90 t/s (Part 2 of 1350)
 
+> 🌐 Language: [中文 / **Chinese**](README.md) · [**English (this page)**](qwen38-5090x2-nccl-mtp-EN.md)
+
 **TL;DR:** This is a follow-up to my [Aug 26 post](https://lcz.me/topic/1350) titled *"Dual 5090 Running Qwen3.8-27B BF16 140K — Real Data & Optimization Notes"* (tid 1350). That post concluded: *"MTP and NCCL — two directions that 'should theoretically be faster' — actually measured slower. What won was the most vanilla tensor-split + q8_0 KV + right-sized ctx, decode ~48 t/s."*
 
 I redid NCCL and MTP over the past month, and **the conclusion flipped**: once I made "NCCL actually running" work correctly, MTP's speculative-decoding gain finally overcame the cross-GPU sync cost. **Decode went from ~48 to ~90 t/s, ~1.9×.** The key was NOT simply "I compiled NCCL" — the 1350 post already proved "compiled NCCL but no faster." The real missing piece was **NCCL + GPU-to-GPU P2P both in place simultaneously**. Below is the full causal chain and every pitfall I hit.
