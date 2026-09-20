@@ -1,5 +1,7 @@
 # 雙 5090 跑 Qwen3.8-27B：把 NCCL 和 MTP 做對，decode 從 48 翻倍到 90 t/s（1350 續篇）
 
+> 🌐 語言 / Language: [**中文（本頁）/ Chinese**](README.md) · [English](qwen38-5090x2-nccl-mtp-EN.md)
+
 先講結論：這是我 8/26 那篇《雙 5090 跑 Qwen3.8-27B BF16 140K 實測數據與優化心得》（tid 1350）的續篇。那篇的結語是「MTP、NCCL 兩個『理論上應該更快』的方向實測更慢，最後贏的是最樸素的 tensor split + q8_0 KV + 合身 ctx，decode ~48 t/s」。
 
 這一個月我把 NCCL 和 MTP 重新做了一遍，**結論反轉了**：把「NCCL 真正跑起來」這件事做對之後，MTP 的投機解碼收益終於蓋過跨卡同步成本，**decode 從 ~48 t/s 拉到 ~90 t/s，約 1.9×**。重點不是「我編了 NCCL」這麼簡單——1350 那篇已經實測過「編了 NCCL 沒更快」，真正的關鍵是 **NCCL + GPU 間 P2P 同時到位**，這才是當時缺的那一塊。下面把因果鏈和踩的坑寫清楚。
